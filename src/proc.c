@@ -168,8 +168,8 @@ struct User *registerUser(void){
 	scanf("%s", numero);
 	getchar();
 	user->numero = numero;
-	if (!isValidNumber(user->numero)){
-		printf("Numéro invalide\n");
+	if (!isValidNumber(user->numero) || checkUser(user->numero) != NULL){
+		printf("Numéro invalide ou existant\n");
 		exit(EXIT_FAILURE);
 	}
 
