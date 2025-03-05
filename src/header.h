@@ -32,6 +32,7 @@ extern int is_valid_date(const char *date);
 extern struct User* registerUser(void);
 extern void writeUser(struct User *user);
 extern char* removeNewLine(const char *string);
+extern char *cleanLine(const char *string);
 extern void printUser(struct User *user);
 
 #endif

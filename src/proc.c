@@ -1,11 +1,11 @@
 #include <stdlib.h>
+#include <ctype.h>
 #include <regex.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include "header.h"
-
 
 bool isValidNumber(const char *number){
 	regex_t _regex;
@@ -265,11 +265,11 @@ struct User *registerUser(void){
 	}
 
 	askForPin("Entrer votre code PIN(6 chiffres): ", pin, PIN_LEN);
+	getchar();
 	user->PIN = removeNewLine(pin);
 
 	user->solde = 0;
 
-	printf("%d\n", getchar());
 	printf("Nom: ");
 	fgets(nom, NAME_LEN, stdin);
 	user->nom = removeNewLine(nom);
@@ -287,7 +287,8 @@ struct User *registerUser(void){
 	}
 	printf("Date d'enregistrement: ");
 	fgets(dateEnregistrement, DATE_LEN, stdin);
-	user->dateEnregistrement = removeNewLine(dateEnregistrement);
+	user->dateEnregistrement = cleanLine(dateEnregistrement);
+	printf("%s\n", user->dateEnregistrement);
 	if (!is_valid_date(user->dateEnregistrement)){
 		printf("Date d'enregistrement invalide\n");
 		exit(EXIT_FAILURE);
@@ -295,14 +296,15 @@ struct User *registerUser(void){
 
 	printf("Date de naissance: ");
 	fgets(dateNaissance, DATE_LEN, stdin);
-	user->dateNaissance = removeNewLine(dateNaissance);
+	user->dateNaissance = removeNewLine(cleanLine(dateNaissance));
+	printf("%s\n", user->dateNaissance);
 	if (!is_valid_date(user->dateNaissance)){
 		printf("Date de naissance invalide\n");
 		exit(EXIT_FAILURE);
 	}
 
 	user->etat = 0;
-	/* printUser(user); */
+	printUser(user);
 	return user;
 }
 
@@ -311,17 +313,23 @@ void writeUser(struct User *user){
 	char *line = NULL;
 	size_t size = 0;
 	ssize_t nread;
+	/* short int found = 0; */
 	char *token;
 
 	FILE *file = fopen("utilisateurs.txt", "a");
+	/* FILE *tmpFile = fopen("utilisateurs_tmp.txt", "a"); */
 
 	while ((nread = getline(&line, &size, file)) != -1){
+		/* found = 0; */
 		while ((token = strsep(&line, "|")) != NULL){
 			if (isValidNumber(token) && strcmp(token, user->numero) == 0){
-				// do something when the user is found out
+				/* found = 1; */
 				break;
 			}
 		}
+		/* if (!found) */
+		/* 	fputs(line, file); */
+			
 	}
 	fprintf(file, "%s|%s|%s|%s|%ld|%s|%s|%d",
 			user->nom, user->prenom, user->numero,
@@ -330,13 +338,32 @@ void writeUser(struct User *user){
 	fclose(file);
 }
 
+char *cleanLine(const char *string){
+	// Clean invalid date strings
+
+	char *newString = malloc(sizeof(char) * (strlen(string)-1));
+	for (int i = 0; i < strlen(string); i++){
+		if (isalnum(string[i]) || string[i] == '/')
+			newString[i] = string[i];
+	}
+	return newString;
+}
+
 char* removeNewLine(const char *string){
+	// This function removes new line and weird characters and leave only ASCII characters in char* string
 	char *newString = malloc(sizeof(char) * (strlen(string)-1));
 	for (int i = 0; i < strlen(string); i++){
 		if (string[i] != '\n')
 			newString[i] = string[i];
 	}
 	return newString;
+	/*  */
+	/* char *newString = malloc(sizeof(char) * (strlen(string)-1)); */
+	/* for (int i = 0; i < strlen(string); i++){ */
+	/* 	if (string[i] != '\n') */
+	/* 		newString[i] = string[i]; */
+	/* } */
+	/* return newString; */
 }
 
 void printUser(struct User *user){
