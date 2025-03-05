@@ -29,10 +29,11 @@ extern void askForPin(const char *placeHolder, char *pin, int size);
 extern bool checkPin(struct User *user, const char* pin);
 extern int createMenu(struct User *user);
 extern int is_valid_date(const char *date);
-extern struct User* registerUser(void);
 extern void writeUser(struct User *user);
+extern struct User *registerUser(char *numero);
 extern char* removeNewLine(const char *string);
 extern char *cleanLine(const char *string);
+extern char* getCurrentDate(void);
 extern void printUser(struct User *user);
 
 #endif

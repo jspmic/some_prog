@@ -7,6 +7,24 @@
 #include <time.h>
 #include "header.h"
 
+char* getCurrentDate(void) {
+    // Allocate space for the date string
+    char *dateStr = malloc(sizeof(char) * DATE_LEN);  // 10 characters + 1 for '\0'
+
+    if (dateStr == NULL) {
+        exit(EXIT_FAILURE);
+    }
+
+    // Get the current time
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+
+    // Format the date as dd/MM/YYYY
+    snprintf(dateStr, DATE_LEN, "%02d/%02d/%04d", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900);
+
+    return dateStr;
+}
+
 bool isValidNumber(const char *number){
 	regex_t _regex;
 	char *patt = "^\\+257(2[2-9]|6[1-9]|7[1-9])[0-9]{6}$";
@@ -246,25 +264,20 @@ int is_valid_date(const char *date) {
     return t != -1 && tm.tm_year + 1900 == year && tm.tm_mon + 1 == month && tm.tm_mday == day;
 }
 
-struct User *registerUser(void){
+struct User *registerUser(char *numero){
 	struct User *user = malloc(sizeof(struct User));
-	char *numero = malloc(sizeof(char)*NUM_LEN);
 	char *pin = malloc(sizeof(char)*PIN_LEN);
 	char *nom = malloc(sizeof(char)*NAME_LEN);
 	char *prenom = malloc(sizeof(char)*NAME_LEN);
-	char *dateEnregistrement = malloc(sizeof(char)*DATE_LEN);
 	char *dateNaissance = malloc(sizeof(char)*DATE_LEN);
 
-	printf("Numéro de Téléphone: ");
-	scanf("%s", numero);
-	getchar();
 	user->numero = removeNewLine(numero);
 	if (!isValidNumber(user->numero) || checkUser(user->numero) != NULL){
 		printf("Numéro invalide ou existant\n");
 		exit(EXIT_FAILURE);
 	}
 
-	askForPin("Entrer votre code PIN(6 chiffres): ", pin, PIN_LEN);
+	askForPin("Entrer un code PIN(6 chiffres): ", pin, PIN_LEN);
 	getchar();
 	user->PIN = removeNewLine(pin);
 
@@ -285,10 +298,7 @@ struct User *registerUser(void){
 		printf("Prenom invalide\n");
 		exit(EXIT_FAILURE);
 	}
-	printf("Date d'enregistrement: ");
-	fgets(dateEnregistrement, DATE_LEN, stdin);
-	user->dateEnregistrement = cleanLine(dateEnregistrement);
-	printf("%s\n", user->dateEnregistrement);
+	user->dateEnregistrement = cleanLine(getCurrentDate());
 	if (!is_valid_date(user->dateEnregistrement)){
 		printf("Date d'enregistrement invalide\n");
 		exit(EXIT_FAILURE);
@@ -309,6 +319,7 @@ struct User *registerUser(void){
 }
 
 // This function will override the user's data in the utilisateurs.txt file
+// Or register a new user if the user is not found
 void writeUser(struct User *user){
 	char *line = NULL;
 	size_t size = 0;
@@ -331,39 +342,49 @@ void writeUser(struct User *user){
 		/* 	fputs(line, file); */
 			
 	}
-	fprintf(file, "%s|%s|%s|%s|%ld|%s|%s|%d",
+	fprintf(file, "%s|%s|%s|%s|%ld|%s|%s|%d\n",
 			user->nom, user->prenom, user->numero,
 			user->PIN, user->solde, user->dateEnregistrement,
 			user->dateNaissance, user->etat);
 	fclose(file);
 }
 
-char *cleanLine(const char *string){
-	// Clean invalid date strings
+char *removeNewLine(const char *string) {
+    // Allocate enough space to include the null terminator
+    int len = strlen(string);
+    char *newString = malloc(sizeof(char) * (len + 1));  // +1 for null-terminator
 
-	char *newString = malloc(sizeof(char) * (strlen(string)-1));
-	for (int i = 0; i < strlen(string); i++){
-		if (isalnum(string[i]) || string[i] == '/')
-			newString[i] = string[i];
-	}
-	return newString;
+    if (newString == NULL) {
+        exit(EXIT_FAILURE);
+    }
+
+    int j = 0;
+    for (int i = 0; i < len; i++) {
+        if (string[i] != '\n') {
+            newString[j++] = string[i];
+        }
+    }
+    newString[j] = '\0';
+    return newString;
 }
 
-char* removeNewLine(const char *string){
-	// This function removes new line and weird characters and leave only ASCII characters in char* string
-	char *newString = malloc(sizeof(char) * (strlen(string)-1));
-	for (int i = 0; i < strlen(string); i++){
-		if (string[i] != '\n')
-			newString[i] = string[i];
-	}
-	return newString;
-	/*  */
-	/* char *newString = malloc(sizeof(char) * (strlen(string)-1)); */
-	/* for (int i = 0; i < strlen(string); i++){ */
-	/* 	if (string[i] != '\n') */
-	/* 		newString[i] = string[i]; */
-	/* } */
-	/* return newString; */
+char *cleanLine(const char *string) {
+	// This function is meant to be used only on dates
+    int len = strlen(string);
+    char *newString = malloc(sizeof(char) * (len + 1));
+
+    if (newString == NULL) {
+        exit(EXIT_FAILURE);
+    }
+
+    int j = 0;
+    for (int i = 0; i < len; i++) {
+        if (isalnum(string[i]) || string[i] == '/') {  // Only allow alphanumeric characters and slashes
+            newString[j++] = string[i];
+        }
+    }
+    newString[j] = '\0';
+    return newString;
 }
 
 void printUser(struct User *user){
