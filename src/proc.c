@@ -81,15 +81,98 @@ struct User* checkUser(const char* number){
 			offset++;
 		}
 	}
+	fclose(file);
 	if (found)
 		return connectedUser;
 	return NULL;
 }
 
-int createMenu(void){
+void askForPin(const char *placeHolder, char *pin, int size){
+	printf("%s", placeHolder);
+	fgets(pin, size, stdin);
+	if (!checkPinValidity(pin)){
+		printf("PIN invalide\n");
+		exit(EXIT_FAILURE);
+	}
+}
+
+void servicesMenu(struct User *user){
 	char buffer[12];
 	int choice = 0;
-	printf("1. Transfert\n");
+
+	printf("\n1. Consulter le solde\n");
+	printf("2. Changer le code PIN\n");
+	printf("3. Changer la langue\n");
+	printf("4. Historique des transactions\n");
+	printf("5. Identification du client\n");
+	printf("6. Consulter les frais\n");
+	printf("0. Retour\n");
+	printf("\nChoisissez: ");
+
+	fgets(buffer, 12, stdin);
+	choice = atoi(buffer);
+	
+	if (choice < 0 || choice > 6){
+		printf("Choix invalide\n");
+		exit(EXIT_FAILURE);
+	}
+
+	char *pin = malloc(sizeof(char)*PIN_LEN);
+	char *new_pin = malloc(sizeof(char)*PIN_LEN);
+
+	switch (choice){
+		case 1:
+			printf("Votre solde est %ld FBu. Merci\n", user->solde);
+			break;
+
+		case 2:
+			printf("Entrez votre code PIN: ");
+			scanf("%s", pin);
+			getchar();
+			if (!checkPin(user, pin)){
+				printf("Le code PIN n'est pas correct. Veuillez verifier a nouveau\n");
+				exit(EXIT_FAILURE);
+			}
+
+			printf("Entrez le nouveau code PIN(6 chiffres): ");
+			scanf("%s", new_pin);
+			getchar();
+			if (!checkPinValidity(new_pin)){
+				printf("PIN invalide\n");
+				exit(EXIT_FAILURE);
+			}
+			user->PIN = new_pin;
+			writeUser(user);
+			break;
+
+		case 5:
+			askForPin("Entrez votre code PIN: ", pin, PIN_LEN);
+			if (!checkPin(user, pin)){
+				printf("Le code PIN n'est pas correct. Veuillez verifier a nouveau\n");
+				exit(EXIT_FAILURE);
+			}
+			printf("\nInformation du compte Lumicash:\n");
+			printf("Noms: %s %s\n", user->nom, user->prenom);
+			printf("Activation: %s\n", user->dateEnregistrement);
+			printf("Né le %s\n", user->dateNaissance);
+			printf("Solde: %ld\n", user->solde);
+			printf("Merci d'avoir utilise Lumicash\n");
+			break;
+
+		case 0:
+			createMenu(user);
+			break;
+
+		default:
+			printf("La fonctionnalité n'est pas implémentée\n");
+			break;
+	}
+}
+
+int createMenu(struct User *user){
+	char buffer[12];
+	int choice = 0;
+	printf("\n1. Transfert\n");
 	printf("2. Retirer\n");
 	printf("3. Achat des unites\n");
 	printf("4. Payer les factures\n");
@@ -110,6 +193,18 @@ int createMenu(void){
 		exit(EXIT_FAILURE);
 	}
 
+	switch (choice){
+		case 10:
+			servicesMenu(user);
+			break;
+		case 11:
+			exit(EXIT_SUCCESS);
+			break;
+		default:
+			printf("La fonctionnalité n'est pas implémentée\n");
+			break;
+	}
+
 	return choice;
 }
 
@@ -121,9 +216,6 @@ bool checkPinValidity(const char* pin){
 }
 
 bool checkPin(struct User *user, const char *pin) {
-	if (!checkPinValidity(pin)){
-		return false;
-	}
 	if (strcmp(pin, user->PIN) == 0){
 		return true;
 	}
@@ -158,78 +250,93 @@ struct User *registerUser(void){
 	struct User *user = malloc(sizeof(struct User));
 	char *numero = malloc(sizeof(char)*NUM_LEN);
 	char *pin = malloc(sizeof(char)*PIN_LEN);
-	char *nom = malloc(sizeof(char)*54);
-	char *prenom = malloc(sizeof(char)*54);
-	char *dateEnregistrement = malloc(sizeof(char)*10);
-	char *dateNaissance = malloc(sizeof(char)*10);
-	unsigned long solde;
+	char *nom = malloc(sizeof(char)*NAME_LEN);
+	char *prenom = malloc(sizeof(char)*NAME_LEN);
+	char *dateEnregistrement = malloc(sizeof(char)*DATE_LEN);
+	char *dateNaissance = malloc(sizeof(char)*DATE_LEN);
 
 	printf("Numéro de Téléphone: ");
 	scanf("%s", numero);
 	getchar();
-	user->numero = numero;
+	user->numero = removeNewLine(numero);
 	if (!isValidNumber(user->numero) || checkUser(user->numero) != NULL){
 		printf("Numéro invalide ou existant\n");
 		exit(EXIT_FAILURE);
 	}
 
-	printf("Pin: ");
-	scanf("%s", pin);
-	getchar();
-	user->PIN = pin;
-	if (!checkPinValidity(user->PIN)){
-		printf("PIN invalide\n");
-		exit(EXIT_FAILURE);
-	}
+	askForPin("Entrer votre code PIN(6 chiffres): ", pin, PIN_LEN);
+	user->PIN = removeNewLine(pin);
 
-	printf("Solde: ");
-	scanf("%ld", &solde);
-	getchar();
-	user->solde = solde;
-	if (user->solde < 0 || user->solde > 5000000){
-		printf("Solde invalide\n");
-		exit(EXIT_FAILURE);
-	}
+	user->solde = 0;
 
+	printf("%d\n", getchar());
 	printf("Nom: ");
-	scanf("%s", nom);
-	getchar();
-	user->nom = nom;
+	fgets(nom, NAME_LEN, stdin);
+	user->nom = removeNewLine(nom);
 	if (!checkName(user->nom)){
 		printf("Nom invalide\n");
 		exit(EXIT_FAILURE);
 	}
 
 	printf("Prenom: ");
-	scanf("%s", prenom);
-	getchar();
-	user->prenom = prenom;
+	fgets(prenom, NAME_LEN, stdin);
+	user->prenom = removeNewLine(prenom);
 	if (!checkName(user->prenom)){
 		printf("Prenom invalide\n");
 		exit(EXIT_FAILURE);
 	}
-
 	printf("Date d'enregistrement: ");
-	scanf("%s", dateEnregistrement);
-	getchar();
-	user->dateEnregistrement = dateEnregistrement;
+	fgets(dateEnregistrement, DATE_LEN, stdin);
+	user->dateEnregistrement = removeNewLine(dateEnregistrement);
 	if (!is_valid_date(user->dateEnregistrement)){
 		printf("Date d'enregistrement invalide\n");
 		exit(EXIT_FAILURE);
 	}
 
 	printf("Date de naissance: ");
-	scanf("%s", dateNaissance);
-	getchar();
-	user->dateNaissance = dateNaissance;
+	fgets(dateNaissance, DATE_LEN, stdin);
+	user->dateNaissance = removeNewLine(dateNaissance);
 	if (!is_valid_date(user->dateNaissance)){
 		printf("Date de naissance invalide\n");
 		exit(EXIT_FAILURE);
 	}
 
 	user->etat = 0;
-
+	/* printUser(user); */
 	return user;
+}
+
+// This function will override the user's data in the utilisateurs.txt file
+void writeUser(struct User *user){
+	char *line = NULL;
+	size_t size = 0;
+	ssize_t nread;
+	char *token;
+
+	FILE *file = fopen("utilisateurs.txt", "a");
+
+	while ((nread = getline(&line, &size, file)) != -1){
+		while ((token = strsep(&line, "|")) != NULL){
+			if (isValidNumber(token) && strcmp(token, user->numero) == 0){
+				// do something when the user is found out
+				break;
+			}
+		}
+	}
+	fprintf(file, "%s|%s|%s|%s|%ld|%s|%s|%d",
+			user->nom, user->prenom, user->numero,
+			user->PIN, user->solde, user->dateEnregistrement,
+			user->dateNaissance, user->etat);
+	fclose(file);
+}
+
+char* removeNewLine(const char *string){
+	char *newString = malloc(sizeof(char) * (strlen(string)-1));
+	for (int i = 0; i < strlen(string); i++){
+		if (string[i] != '\n')
+			newString[i] = string[i];
+	}
+	return newString;
 }
 
 void printUser(struct User *user){

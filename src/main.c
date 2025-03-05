@@ -10,16 +10,18 @@ int main(){
 	/* getchar(); */
 	number = "+25768502484";
 	pin = "123456";
+	/* number = "+25779988777"; */
+	/* pin = "654321"; */
 	struct User *user = checkUser(number);
 	if (user == NULL){
 		printf("Utilisateur non trouvé\n");
-		registerUser();
+		user = registerUser();
+		writeUser(user);
 	}
 
 	/* printUser(user); // For debugging purposes */
 
 	int attemptsCounter = 0;
-	int choice = 0;
 
 	printf("\n");
 
@@ -33,15 +35,12 @@ int main(){
 		attemptsCounter++;
 	} while (attemptsCounter < ATTEMPTS);
 
-	printf("\n");
-
 	if (attemptsCounter == ATTEMPTS){
 		printf("Nombre d'essais dépassé\n");
 		exit(EXIT_FAILURE);
 	}
 	else{
-		choice = createMenu();
+		createMenu(user);
 	}
-	printf("Choix: %d\n", choice);
 	return 0;
 }
